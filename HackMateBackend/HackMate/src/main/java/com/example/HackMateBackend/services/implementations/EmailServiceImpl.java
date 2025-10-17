@@ -3,8 +3,6 @@ package com.example.HackMateBackend.services.implementations;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -17,9 +15,6 @@ import com.example.HackMateBackend.services.interfaces.EmailService;
 @RequiredArgsConstructor
 @Slf4j
 public class EmailServiceImpl implements EmailService {
-
-
-    private static final Logger log = LoggerFactory.getLogger(EmailServiceImpl.class);
 
     @Autowired
     private JavaMailSender mailSender;
@@ -130,7 +125,7 @@ public class EmailServiceImpl implements EmailService {
     private String buildEmailVerificationMessage(String token) {
         log.info("AuthenticationVerification: Building email verification message with token: {}", token);
 
-        String verificationUrl = baseUrl + "/auth/verify-email?token=" + token;
+        String verificationUrl = baseUrl + "/api/auth/verify-email?token=" + token;
         log.info("AuthenticationVerification: Verification URL created: {}", verificationUrl);
 
         String message = String.format(

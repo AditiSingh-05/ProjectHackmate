@@ -72,11 +72,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception e) {
-        log.error("Unexpected exception occurred", e);
+        log.error("Unexpected exception occurred: {}", e.getMessage(), e);
 
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("success", false);
-        errorResponse.put("message", "Internal server error");
+        errorResponse.put("message", e.getMessage() != null ? e.getMessage() : "Internal server error");
+        errorResponse.put("error", e.getClass().getSimpleName());
         errorResponse.put("timestamp", LocalDateTime.now());
         errorResponse.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
 

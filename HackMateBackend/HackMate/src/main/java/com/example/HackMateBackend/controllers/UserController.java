@@ -171,17 +171,30 @@ public class UserController {
 
     @GetMapping("/verify-email")
     public ResponseEntity<?> verifyEmailGet(@RequestParam("token") String token) {
-        log.info("Email verification via GET request");
+        log.info("Email verification via GET request with token: {}", token);
 
         try {
             EmailVerificationRequestDto request = new EmailVerificationRequestDto(token);
             EmailVerificationResponseDto response = userService.verifyEmail(request);
             log.info("Email verification successful via GET");
             return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            String message = e.getMessage();
+            log.error("Email verification failed via GET: {}", message, e);
+            if ("Invalid verification token".equals(message)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new EmailVerificationResponseDto(false, "Invalid or expired verification token", null));
+            } else if ("Email is already verified".equals(message)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new EmailVerificationResponseDto(false, "Email is already verified", null));
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(new EmailVerificationResponseDto(false, message != null ? message : "Internal server error", null));
+            }
         } catch (Exception e) {
-            log.error("Email verification failed via GET", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new EmailVerificationResponseDto(false, e.getMessage(), null));
+            log.error("Email verification failed via GET with exception: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new EmailVerificationResponseDto(false, e.getMessage() != null ? e.getMessage() : "Internal server error", null));
         }
     }
 
@@ -227,6 +240,20 @@ public class UserController {
         return ResponseEntity.ok(new EmailExistenceResponse(exists));
     }
 
+    @GetMapping("/check-email-verification")
+    public ResponseEntity<?> checkEmailVerification(@RequestParam("email") String email) {
+        log.info("Email verification status check for: {}", email);
+
+        try {
+            boolean isVerified = userService.isEmailVerified(email);
+            return ResponseEntity.ok(new EmailVerificationStatusResponse(isVerified, email));
+        } catch (Exception e) {
+            log.error("Failed to check email verification status for: {}", email, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new EmailVerificationStatusResponse(false, email, "Failed to check verification status"));
+        }
+    }
+
 
     @GetMapping("/health")
     public ResponseEntity<String> healthCheck() {
@@ -247,6 +274,48 @@ public class UserController {
 
         public void setExists(boolean exists) {
             this.exists = exists;
+        }
+    }
+
+    public static class EmailVerificationStatusResponse {
+        private boolean verified;
+        private String email;
+        private String message;
+
+        public EmailVerificationStatusResponse(boolean verified, String email) {
+            this.verified = verified;
+            this.email = email;
+            this.message = verified ? "Email is verified" : "Email is not verified";
+        }
+
+        public EmailVerificationStatusResponse(boolean verified, String email, String message) {
+            this.verified = verified;
+            this.email = email;
+            this.message = message;
+        }
+
+        public boolean isVerified() {
+            return verified;
+        }
+
+        public void setVerified(boolean verified) {
+            this.verified = verified;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+
+        public void setEmail(String email) {
+            this.email = email;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public void setMessage(String message) {
+            this.message = message;
         }
     }
 }

@@ -45,5 +45,8 @@ public interface UserService {
     boolean validateResetToken(String token);
 
 
+    boolean isEmailVerified(String email);
+
+
     void updateLastLogin(Long userId);
 }

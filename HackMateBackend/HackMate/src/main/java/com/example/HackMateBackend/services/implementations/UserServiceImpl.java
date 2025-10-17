@@ -372,6 +372,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public boolean isEmailVerified(String email) {
+        Optional<User> userOpt = userRepository.findByEmailIgnoreCase(email);
+        return userOpt.map(User::isEmailVerified).orElse(false);
+    }
+
+    @Override
     public void updateLastLogin(Long userId) {
         userRepository.updateLastLoginTime(userId, LocalDateTime.now());
         log.debug("Updated last login time for user ID: {}", userId);
