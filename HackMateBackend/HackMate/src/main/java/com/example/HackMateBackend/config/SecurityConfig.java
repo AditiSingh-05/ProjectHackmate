@@ -88,7 +88,7 @@ public class SecurityConfig {
                         // Allow both /auth/** and /api/auth/** patterns for authentication endpoints
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/auth/reset-password").permitAll()
+                        .requestMatchers( "/api/auth/reset-password").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/public/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()

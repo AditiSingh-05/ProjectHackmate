@@ -25,7 +25,7 @@ public class UserController {
     private UserService userService;
     private static final Logger log = LoggerFactory.getLogger(CustomUserDetailService.class);
 
-
+//working
     @PostMapping(value = "/signup", consumes = "application/json", produces = "application/json")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequestDto signupRequest) {
         log.info("AuthenticationVerification: 🎯 Signup endpoint hit for email: {}", signupRequest.getEmail());
@@ -53,7 +53,7 @@ public class UserController {
         }
     }
 
-
+//working
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@Valid @RequestBody LoginRequestDto loginRequest) {
         log.info("Login request received for email: {}", loginRequest.getEmail());
@@ -69,7 +69,7 @@ public class UserController {
         }
     }
 
-
+//working
     @PostMapping("/change-password")
     public ResponseEntity<?> changePassword(
             @AuthenticationPrincipal CustomUserDetailService.UserPrincipal userPrincipal,
