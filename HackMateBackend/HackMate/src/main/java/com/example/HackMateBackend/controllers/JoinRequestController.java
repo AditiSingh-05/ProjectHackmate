@@ -1,6 +1,6 @@
 package com.example.HackMateBackend.controllers;
 
-import com.example.HackMateBackend.dtos.JoinRequestDto.*;
+import com.example.HackMateBackend.dtos.joinrequest.*;
 import com.example.HackMateBackend.services.implementations.CustomUserDetailService;
 import com.example.HackMateBackend.services.interfaces.JoinRequestService;
 import jakarta.validation.Valid;

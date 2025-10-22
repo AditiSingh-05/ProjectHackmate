@@ -1,6 +1,6 @@
 package com.example.HackMateBackend.controllers;
 
-import com.example.HackMateBackend.dtos.ProfileDto.*;
+import com.example.HackMateBackend.dtos.profile.*;
 import com.example.HackMateBackend.services.implementations.CustomUserDetailService;
 import com.example.HackMateBackend.services.interfaces.ProfileService;
 import jakarta.validation.Valid;
@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 public class ProfileController {
 
     private final ProfileService profileService;
+
 
     @PostMapping("/setup")
     public ResponseEntity<ProfileSetupResponseDto> setupProfile(
@@ -125,4 +126,6 @@ public class ProfileController {
     public ResponseEntity<String> healthCheck() {
         return ResponseEntity.ok("Profile service is running");
     }
+
+
 }

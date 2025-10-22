@@ -1,6 +1,6 @@
 package com.example.HackMateBackend.services.interfaces;
 
-import com.example.HackMateBackend.dtos.JoinRequestDto.*;
+import com.example.HackMateBackend.dtos.joinrequest.*;
 
 public interface JoinRequestService {
 

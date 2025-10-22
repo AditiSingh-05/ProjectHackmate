@@ -1,6 +1,6 @@
 package com.example.HackMateBackend.controllers;
 
-import com.example.HackMateBackend.dtos.TeamDto.*;
+import com.example.HackMateBackend.dtos.team.*;
 import com.example.HackMateBackend.services.implementations.CustomUserDetailService;
 import com.example.HackMateBackend.services.interfaces.TeamService;
 import jakarta.validation.Valid;
@@ -11,8 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/teams")

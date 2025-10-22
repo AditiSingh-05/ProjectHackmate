@@ -1,8 +1,6 @@
 package com.example.HackMateBackend.services.implementations;
 
 import com.example.HackMateBackend.data.entities.*;
-import com.example.HackMateBackend.data.enums.Priority;
-import com.example.HackMateBackend.dtos.NotificationDto.*;
 import com.example.HackMateBackend.repositories.*;
 import com.example.HackMateBackend.services.interfaces.NotificationService;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.HackMateBackend.dtos.notification.*;
 
 import java.time.LocalDateTime;
 import java.util.List;

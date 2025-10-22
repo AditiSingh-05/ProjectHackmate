@@ -1,6 +1,8 @@
 package com.example.HackMateBackend.services.implementations;
 
-import com.example.HackMateBackend.dtos.AuthenticationDto.*;
+import com.example.HackMateBackend.dtos.authentication.*;
+
+
 import com.example.HackMateBackend.data.enums.Roles;
 import com.example.HackMateBackend.data.entities.User;
 import com.example.HackMateBackend.jwtauth.JwtUtils;

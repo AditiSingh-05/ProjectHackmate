@@ -3,6 +3,7 @@ package com.example.HackMateBackend.services.implementations;
 
 import com.example.HackMateBackend.repositories.UserRepository;
 import jakarta.transaction.Transactional;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -63,7 +64,10 @@ public class CustomUserDetailService implements UserDetailsService {
     }
 
 
+
+
     public static class UserPrincipal implements UserDetails {
+        @Getter
         private Long id;
         private String email;
         private String password;
@@ -113,15 +117,6 @@ public class CustomUserDetailService implements UserDetailsService {
             return email;
         }
 
-        @Override
-        public boolean isAccountNonExpired() {
-            return true;
-        }
-
-        @Override
-        public boolean isAccountNonLocked() {
-            return true;
-        }
 
         @Override
         public boolean isCredentialsNonExpired() {
@@ -133,30 +128,7 @@ public class CustomUserDetailService implements UserDetailsService {
             return emailVerified; // Only verified users can login
         }
 
-        // Custom getters
-        public Long getId() {
-            return id;
-        }
-
-        public String getEmail() {
-            return email;
-        }
-
-        public boolean isEmailVerified() {
-            return emailVerified;
-        }
-
-        public boolean isProfileSetup() {
-            return profileSetup;
-        }
     }
 
 
 }
-
-//UserPrincipal.create(User user): Static factory method to convert a User entity into a UserPrincipal,
-// including mapping roles to GrantedAuthority (e.g., ROLE_USER, ROLE_ADMIN).
-//getUsername/getPassword/getAuthorities etc.: Required by UserDetails interface. These methods tell
-// Spring Security how to get the user’s credentials and roles.
-//isEnabled(): Returns emailVerified—so only users who have verified their email can log in (professional
-// security best practice).

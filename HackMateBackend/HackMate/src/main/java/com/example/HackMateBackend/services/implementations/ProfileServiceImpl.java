@@ -1,7 +1,7 @@
 package com.example.HackMateBackend.services.implementations;
 
 import com.example.HackMateBackend.data.entities.*;
-import com.example.HackMateBackend.dtos.ProfileDto.*;
+import com.example.HackMateBackend.dtos.profile.*;
 import com.example.HackMateBackend.repositories.*;
 import com.example.HackMateBackend.services.interfaces.ProfileService;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 

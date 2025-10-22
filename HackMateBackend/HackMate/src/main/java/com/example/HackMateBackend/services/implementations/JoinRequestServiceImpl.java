@@ -2,7 +2,7 @@ package com.example.HackMateBackend.services.implementations;
 
 import com.example.HackMateBackend.data.entities.*;
 import com.example.HackMateBackend.data.enums.Status;
-import com.example.HackMateBackend.dtos.JoinRequestDto.*;
+import com.example.HackMateBackend.dtos.joinrequest.*;
 import com.example.HackMateBackend.repositories.*;
 import com.example.HackMateBackend.services.interfaces.JoinRequestService;
 import com.example.HackMateBackend.services.interfaces.NotificationService;
@@ -66,7 +66,7 @@ public class JoinRequestServiceImpl implements JoinRequestService {
         joinRequest.setTeam(team);
         joinRequest.setRequester(user);
         joinRequest.setRequestedRole(request.getRequestedRole());
-        joinRequest.setUserSkills(request.getUserSkills() != null ? request.getUserSkills() : new ArrayList<>());
+        joinRequest.setUserSkills(request.getUserSkills() != null ? request.getUserSkills() : new ArrayList<String>());
         joinRequest.setMessage(request.getMessage());
         joinRequest.setStatus(Status.PENDING);
         // Expiry is set in @PrePersist

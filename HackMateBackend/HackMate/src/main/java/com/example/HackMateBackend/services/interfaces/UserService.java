@@ -1,6 +1,19 @@
 package com.example.HackMateBackend.services.interfaces;
 
-import com.example.HackMateBackend.dtos.AuthenticationDto.*;
+import com.example.HackMateBackend.dtos.authentication.SignupResponseDto;
+import com.example.HackMateBackend.dtos.authentication.SignupRequestDto;
+import com.example.HackMateBackend.dtos.authentication.LoginResponseDto;
+import com.example.HackMateBackend.dtos.authentication.LoginRequestDto;
+import com.example.HackMateBackend.dtos.authentication.ChangePasswordResponseDto;
+import com.example.HackMateBackend.dtos.authentication.ChangePasswordRequestDto;
+import com.example.HackMateBackend.dtos.authentication.ForgotPasswordResponseDto;
+import com.example.HackMateBackend.dtos.authentication.ForgotPasswordRequestDto;
+import com.example.HackMateBackend.dtos.authentication.ResetPasswordResponseDto;
+import com.example.HackMateBackend.dtos.authentication.ResetPasswordRequestDto;
+import com.example.HackMateBackend.dtos.authentication.EmailVerificationResponseDto;
+import com.example.HackMateBackend.dtos.authentication.EmailVerificationRequestDto;
+import com.example.HackMateBackend.dtos.authentication.ProfileSetupStatusDto;
+
 import com.example.HackMateBackend.data.entities.User;
 
 import java.util.Optional;

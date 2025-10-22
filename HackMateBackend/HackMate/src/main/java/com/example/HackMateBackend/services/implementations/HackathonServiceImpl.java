@@ -3,7 +3,10 @@ package com.example.HackMateBackend.services.implementations;
 import com.example.HackMateBackend.data.entities.*;
 import com.example.HackMateBackend.data.enums.RegistrationStatus;
 import com.example.HackMateBackend.data.enums.Status;
-import com.example.HackMateBackend.dtos.HackathonDto.*;
+import com.example.HackMateBackend.dtos.hackathon.*;
+
+import com.example.HackMateBackend.dtos.hackathon.StarToggleRequestDto;
+import com.example.HackMateBackend.dtos.hackathon.StarToggleResponseDto;
 import com.example.HackMateBackend.repositories.*;
 import com.example.HackMateBackend.services.interfaces.HackathonService;
 import lombok.RequiredArgsConstructor;

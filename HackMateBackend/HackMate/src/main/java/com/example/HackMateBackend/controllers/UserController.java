@@ -2,7 +2,7 @@ package com.example.HackMateBackend.controllers;
 
 
 import com.example.HackMateBackend.data.enums.Roles;
-import com.example.HackMateBackend.dtos.AuthenticationDto.*;
+import com.example.HackMateBackend.dtos.authentication.*;
 import com.example.HackMateBackend.services.interfaces.UserService;
 import com.example.HackMateBackend.services.implementations.CustomUserDetailService;
 import jakarta.validation.Valid;

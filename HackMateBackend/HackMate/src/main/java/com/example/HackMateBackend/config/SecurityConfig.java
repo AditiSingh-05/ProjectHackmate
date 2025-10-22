@@ -86,15 +86,15 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
                         // Allow both /auth/** and /api/auth/** patterns for authentication endpoints
-                        .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers( "/api/auth/reset-password").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/public/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/hackathons/feed").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/hackathons/feed").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/colleges/**").permitAll()
+
+                        .requestMatchers(HttpMethod.GET, "api/hackathons/feed").permitAll()
+                        .requestMatchers(HttpMethod.GET, "api/api/hackathons/feed").permitAll()
+                        .requestMatchers(HttpMethod.GET, "api/colleges/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/creator/admin_control/**").hasRole("CREATOR")
                         .requestMatchers("/api/creator/admin_control/**").hasRole("CREATOR")

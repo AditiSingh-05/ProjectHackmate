@@ -1,6 +1,6 @@
 package com.example.HackMateBackend.services.interfaces;
 
-import com.example.HackMateBackend.dtos.TeamDto.*;
+import com.example.HackMateBackend.dtos.team.*;
 import com.example.HackMateBackend.data.entities.Team;
 
 import java.util.Optional;

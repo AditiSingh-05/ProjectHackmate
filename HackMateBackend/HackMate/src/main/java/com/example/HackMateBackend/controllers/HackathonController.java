@@ -1,6 +1,8 @@
 package com.example.HackMateBackend.controllers;
 
-import com.example.HackMateBackend.dtos.HackathonDto.*;
+import com.example.HackMateBackend.dtos.hackathon.*;
+
+import com.example.HackMateBackend.dtos.hackathon.StarToggleRequestDto;
 import com.example.HackMateBackend.services.implementations.CustomUserDetailService;
 import com.example.HackMateBackend.services.interfaces.HackathonService;
 import jakarta.validation.Valid;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Slf4j
 public class HackathonController {
+
 
     private final HackathonService hackathonService;
 
@@ -73,8 +76,7 @@ public class HackathonController {
 
     // User endpoints
     @PostMapping
-    @PreAuthorize("hasRole('USER') or hasRole('CREATOR')")
-    public ResponseEntity<CreateHackathonResponseDto> createHackathon(
+   public ResponseEntity<CreateHackathonResponseDto> createHackathon(
             @Valid @RequestBody CreateHackathonRequestDto request,
             @AuthenticationPrincipal CustomUserDetailService.UserPrincipal userPrincipal) {
 

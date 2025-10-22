@@ -1,6 +1,6 @@
 package com.example.HackMateBackend.services.interfaces;
 
-import com.example.HackMateBackend.dtos.NotificationDto.*;
+import com.example.HackMateBackend.dtos.notification.*;
 import com.example.HackMateBackend.data.entities.JoinRequest;
 import com.example.HackMateBackend.data.entities.Hackathon;
 

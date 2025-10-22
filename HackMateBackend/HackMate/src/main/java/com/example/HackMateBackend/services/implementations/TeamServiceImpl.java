@@ -2,7 +2,7 @@ package com.example.HackMateBackend.services.implementations;
 
 import com.example.HackMateBackend.data.entities.*;
 import com.example.HackMateBackend.data.enums.TeamRole;
-import com.example.HackMateBackend.dtos.TeamDto.*;
+import com.example.HackMateBackend.dtos.team.*;
 import com.example.HackMateBackend.repositories.*;
 import com.example.HackMateBackend.services.interfaces.TeamService;
 import lombok.RequiredArgsConstructor;

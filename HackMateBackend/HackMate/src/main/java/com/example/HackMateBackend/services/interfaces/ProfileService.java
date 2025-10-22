@@ -1,6 +1,6 @@
 package com.example.HackMateBackend.services.interfaces;
 
-import com.example.HackMateBackend.dtos.ProfileDto.*;
+import com.example.HackMateBackend.dtos.profile.*;
 import com.example.HackMateBackend.data.entities.Profile;
 
 import java.util.Optional;

@@ -1,6 +1,18 @@
 package com.example.HackMateBackend.services.interfaces;
 
-import com.example.HackMateBackend.dtos.HackathonDto.*;
+import com.example.HackMateBackend.dtos.hackathon.CreateHackathonRequestDto;
+import com.example.HackMateBackend.dtos.hackathon.CreateHackathonResponseDto;
+import com.example.HackMateBackend.dtos.hackathon.HackathonListResponseDto;
+import com.example.HackMateBackend.dtos.hackathon.HackathonDetailsResponseDto;
+import com.example.HackMateBackend.dtos.hackathon.RegistrationToggleRequestDto;
+import com.example.HackMateBackend.dtos.hackathon.RegistrationToggleResponseDto;
+import com.example.HackMateBackend.dtos.hackathon.StarToggleRequestDto;
+import com.example.HackMateBackend.dtos.hackathon.StarToggleResponseDto;
+import com.example.HackMateBackend.dtos.hackathon.HackathonFilterRequestDto;
+import com.example.HackMateBackend.dtos.hackathon.AIExtractionRequestDto;
+import com.example.HackMateBackend.dtos.hackathon.AIExtractionResponseDto;
+import com.example.HackMateBackend.dtos.hackathon.HackathonListItemDto;
+
 import com.example.HackMateBackend.data.entities.Hackathon;
 import org.springframework.data.domain.Pageable;
 

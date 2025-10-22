@@ -3,7 +3,6 @@ package com.example.HackMateBackend.data.entities;
 import com.example.HackMateBackend.data.enums.Roles;
 import com.example.HackMateBackend.data.enums.TeamRole;
 import com.example.HackMateBackend.data.enums.TeamStatus;
-import com.example.HackMateBackend.dtos.TeamDto;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
