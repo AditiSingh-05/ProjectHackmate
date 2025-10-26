@@ -2,9 +2,11 @@ package com.example.HackMateBackend.services.implementations;
 
 import com.example.HackMateBackend.data.entities.User;
 import com.example.HackMateBackend.data.enums.Roles;
+import com.example.HackMateBackend.dtos.adminmanagement.ListOfUsersDto;
 import com.example.HackMateBackend.repositories.UserRepository;
 import com.example.HackMateBackend.services.interfaces.AdminManagementService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.HackMateBackend.dtos.adminmanagement.ChangeUserRoleRequestDto;
@@ -24,7 +26,6 @@ public class AdminManagementServiceImpl implements AdminManagementService {
 
     @Override
     public ChangeUserRoleResponseDto changeUserRole(
-            Long creatorId,
             ChangeUserRoleRequestDto request
     ) {
         Optional<User> user = userRepository.findByEmailIgnoreCase(request.getEmail());
@@ -53,14 +54,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     public UserRoleInfoDto getUserRoleInfo(Long userId) {
         Optional<User> user = userRepository.findById(userId);
         if (user.isPresent()) {
-            return new UserRoleInfoDto(
-                    user.get().getEmail(),
-                    user.get().getRole(),
-                    user.get().isEmailVerified(),
-                    user.get().isProfileSetup(),
-                    user.get().getCreatedAt(),
-                    user.get().getLastLoginAt()
-            );
+            return mapToUSerRoleInfoDto(user.get());
         }else{
             throw new RuntimeException("User not found with the id " + userId);
         }
@@ -70,16 +64,43 @@ public class AdminManagementServiceImpl implements AdminManagementService {
 
     @Override
     public UserRoleInfoDto getUserRoleInfoByEmail(String email) {
-        return null;
+        Optional<User> user = userRepository.findByEmailIgnoreCase(email);
+        if (user.isPresent()) {
+            return mapToUSerRoleInfoDto(user.get());
+        }else{
+            throw new RuntimeException("User not found with the email:" + email);
+        }
     }
 
     @Override
-    public List<UserRoleInfoDto> getAllAdmins() {
-        return List.of();
+    public ListOfUsersDto getAllAdmins() {
+        List<User> admins = userRepository.findByRole(Roles.ADMIN);
+        return mapToListOfUsersDto(admins);
+
     }
 
     @Override
-    public List<UserRoleInfoDto> getAllUsers() {
-        return List.of();
+    public ListOfUsersDto getAllUsers() {
+        List<User> users = userRepository.findByRole(Roles.USER);
+        return mapToListOfUsersDto(users);
+    }
+
+
+    public UserRoleInfoDto mapToUSerRoleInfoDto(User user){
+        return new UserRoleInfoDto(
+                user.getEmail(),
+                user.getRole(),
+                user.isEmailVerified(),
+                user.isProfileSetup(),
+                user.getCreatedAt(),
+                user.getLastLoginAt()
+        );
+    }
+
+    public ListOfUsersDto mapToListOfUsersDto(List<User> users){
+        List<UserRoleInfoDto> userRoleInfoDtos = users.stream()
+                .map(this::mapToUSerRoleInfoDto)
+                .toList();
+        return new ListOfUsersDto(userRoleInfoDtos);
     }
 }
