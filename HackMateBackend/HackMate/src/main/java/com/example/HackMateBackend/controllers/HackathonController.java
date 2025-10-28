@@ -1,13 +1,10 @@
 package com.example.HackMateBackend.controllers;
 
 import com.example.HackMateBackend.dtos.hackathon.*;
-
-import com.example.HackMateBackend.dtos.hackathon.StarToggleRequestDto;
-import com.example.HackMateBackend.services.implementations.CustomUserDetailService;
+import com.example.HackMateBackend.services.implementations.CustomUserDetailService.UserPrincipal;
 import com.example.HackMateBackend.services.interfaces.HackathonService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -19,13 +16,12 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/hackathons")
 @RequiredArgsConstructor
-@Slf4j
 public class HackathonController {
-
 
     private final HackathonService hackathonService;
 
-    // Public endpoints
+    // === Public Endpoints (No login required) ===
+
     @GetMapping("/feed")
     public ResponseEntity<HackathonListResponseDto> getPublicFeed(
             @RequestParam(defaultValue = "") String search,
@@ -34,8 +30,6 @@ public class HackathonController {
             @RequestParam(defaultValue = "asc") String sortDirection,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-
-        log.info("Public hackathon feed requested - search: {}, page: {}, size: {}", search, page, size);
 
         HackathonFilterRequestDto filterRequest = new HackathonFilterRequestDto();
         filterRequest.setSearch(search);
@@ -49,49 +43,42 @@ public class HackathonController {
             HackathonListResponseDto response = hackathonService.getPublicHackathonFeed(filterRequest);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Error fetching public hackathon feed", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.internalServerError().build();
         }
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<HackathonDetailsResponseDto> getHackathonDetails(
             @PathVariable Long id,
-            @AuthenticationPrincipal CustomUserDetailService.UserPrincipal userPrincipal) {
-
-        log.info("Hackathon details requested for ID: {}", id);
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
         try {
             Long userId = userPrincipal != null ? userPrincipal.getId() : null;
             HackathonDetailsResponseDto response = hackathonService.getHackathonDetails(id, userId);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            log.error("Error fetching hackathon details for ID: {}", id, e);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            log.error("Unexpected error fetching hackathon details", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.internalServerError().build();
         }
     }
 
-    // User endpoints
-    @PostMapping
-   public ResponseEntity<CreateHackathonResponseDto> createHackathon(
-            @Valid @RequestBody CreateHackathonRequestDto request,
-            @AuthenticationPrincipal CustomUserDetailService.UserPrincipal userPrincipal) {
+    // === User Endpoints (Login required) ===
 
-        log.info("Create hackathon request by user: {}", userPrincipal.getId());
+    @PostMapping
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<CreateHackathonResponseDto> createHackathon(
+            @Valid @RequestBody CreateHackathonRequestDto request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
         try {
             CreateHackathonResponseDto response = hackathonService.createHackathon(request, userPrincipal.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (RuntimeException e) {
-            log.error("Error creating hackathon", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            return ResponseEntity.badRequest()
                     .body(new CreateHackathonResponseDto(false, e.getMessage(), null, null, null));
         } catch (Exception e) {
-            log.error("Unexpected error creating hackathon", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            return ResponseEntity.internalServerError()
                     .body(new CreateHackathonResponseDto(false, "Internal server error", null, null, null));
         }
     }
@@ -100,16 +87,13 @@ public class HackathonController {
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<RegistrationToggleResponseDto> toggleRegistration(
             @Valid @RequestBody RegistrationToggleRequestDto request,
-            @AuthenticationPrincipal CustomUserDetailService.UserPrincipal userPrincipal) {
-
-        log.info("Registration toggle for hackathon: {} by user: {}", request.getHackathonId(), userPrincipal.getId());
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
         try {
             RegistrationToggleResponseDto response = hackathonService.toggleRegistration(request, userPrincipal.getId());
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            log.error("Error toggling registration", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            return ResponseEntity.badRequest()
                     .body(new RegistrationToggleResponseDto(false, e.getMessage(), false, null));
         }
     }
@@ -118,16 +102,13 @@ public class HackathonController {
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<StarToggleResponseDto> toggleStar(
             @Valid @RequestBody StarToggleRequestDto request,
-            @AuthenticationPrincipal CustomUserDetailService.UserPrincipal userPrincipal) {
-
-        log.info("Star toggle for hackathon: {} by user: {}", request.getHackathonId(), userPrincipal.getId());
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
         try {
             StarToggleResponseDto response = hackathonService.toggleStar(request, userPrincipal.getId());
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            log.error("Error toggling star", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            return ResponseEntity.badRequest()
                     .body(new StarToggleResponseDto(false, e.getMessage(), false, null));
         }
     }
@@ -135,53 +116,47 @@ public class HackathonController {
     @GetMapping("/my-registered")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<HackathonListResponseDto> getMyRegisteredHackathons(
-            @AuthenticationPrincipal CustomUserDetailService.UserPrincipal userPrincipal,
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
-        log.info("Fetching registered hackathons for user: {}", userPrincipal.getId());
-
         try {
             Pageable pageable = PageRequest.of(page, size);
-            HackathonListResponseDto response = hackathonService.getUserRegisteredHackathons(userPrincipal.getId(), pageable);
+            HackathonListResponseDto response = hackathonService.getUserRegisteredHackathons(
+                    userPrincipal.getId(), pageable);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Error fetching registered hackathons", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.internalServerError().build();
         }
     }
 
     @GetMapping("/my-starred")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<HackathonListResponseDto> getMyStarredHackathons(
-            @AuthenticationPrincipal CustomUserDetailService.UserPrincipal userPrincipal,
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
-        log.info("Fetching starred hackathons for user: {}", userPrincipal.getId());
-
         try {
             Pageable pageable = PageRequest.of(page, size);
-            HackathonListResponseDto response = hackathonService.getUserStarredHackathons(userPrincipal.getId(), pageable);
+            HackathonListResponseDto response = hackathonService.getUserStarredHackathons(
+                    userPrincipal.getId(), pageable);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Error fetching starred hackathons", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.internalServerError().build();
         }
     }
 
-    // Admin endpoints
+    // === Admin Endpoints ===
+
     @GetMapping("/pending")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<HackathonListResponseDto> getPendingHackathons() {
-        log.info("Fetching pending hackathons for admin review");
-
         try {
             HackathonListResponseDto response = hackathonService.getPendingHackathons();
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Error fetching pending hackathons", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.internalServerError().build();
         }
     }
 
@@ -189,16 +164,13 @@ public class HackathonController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CreateHackathonResponseDto> approveHackathon(
             @PathVariable Long id,
-            @AuthenticationPrincipal CustomUserDetailService.UserPrincipal userPrincipal) {
-
-        log.info("Approving hackathon: {} by admin: {}", id, userPrincipal.getId());
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
         try {
             CreateHackathonResponseDto response = hackathonService.approveHackathon(id, userPrincipal.getId());
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            log.error("Error approving hackathon", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            return ResponseEntity.badRequest()
                     .body(new CreateHackathonResponseDto(false, e.getMessage(), null, null, null));
         }
     }
@@ -207,34 +179,29 @@ public class HackathonController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CreateHackathonResponseDto> rejectHackathon(
             @PathVariable Long id,
-            @AuthenticationPrincipal CustomUserDetailService.UserPrincipal userPrincipal) {
-
-        log.info("Rejecting hackathon: {} by admin: {}", id, userPrincipal.getId());
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
         try {
             CreateHackathonResponseDto response = hackathonService.rejectHackathon(id, userPrincipal.getId());
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            log.error("Error rejecting hackathon", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            return ResponseEntity.badRequest()
                     .body(new CreateHackathonResponseDto(false, e.getMessage(), null, null, null));
         }
     }
 
-    // AI endpoints
+    // === AI Endpoints ===
+
     @PostMapping("/ai-extract")
     @PreAuthorize("hasRole('USER') or hasRole('CREATOR')")
     public ResponseEntity<AIExtractionResponseDto> extractHackathonData(
             @Valid @RequestBody AIExtractionRequestDto request) {
 
-        log.info("AI extraction request received");
-
         try {
             AIExtractionResponseDto response = hackathonService.extractHackathonData(request);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Error in AI extraction", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            return ResponseEntity.internalServerError()
                     .body(new AIExtractionResponseDto(false, null, null, null, null,
                             null, null, null, null, 0.0, "Internal server error"));
         }

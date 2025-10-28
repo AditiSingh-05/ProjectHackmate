@@ -8,7 +8,6 @@ import com.example.HackMateBackend.services.interfaces.JoinRequestService;
 import com.example.HackMateBackend.services.interfaces.NotificationService;
 import com.example.HackMateBackend.services.interfaces.EmailService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,7 +17,6 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 @Transactional
 public class JoinRequestServiceImpl implements JoinRequestService {
 
@@ -31,52 +29,39 @@ public class JoinRequestServiceImpl implements JoinRequestService {
 
     @Override
     public SendJoinRequestResponseDto sendJoinRequest(SendJoinRequestDto request, Long userId) {
-        log.info("Sending join request for team: {} by user: {}", request.getTeamId(), userId);
-
-        // Validate user
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Validate team
         Team team = teamRepository.findByIdAndNotDeleted(request.getTeamId())
                 .orElseThrow(() -> new RuntimeException("Team not found"));
 
-        // Check if user already has an active join request
         if (hasActiveJoinRequest(userId)) {
             throw new RuntimeException("You already have an active join request. Please wait for it to be processed or cancel it first.");
         }
 
-        // Check if user can send join request to this team
         if (!canSendJoinRequest(userId, request.getTeamId())) {
             throw new RuntimeException("You cannot send a join request to this team");
         }
 
-        // Check if team is full or closed
         if (team.isFull() || !team.isActive()) {
             throw new RuntimeException("This team is not accepting new members");
         }
 
-        // Check if user is already in a team for this hackathon
         if (teamRepository.isUserInAnyTeamForHackathon(userId, team.getHackathon().getId())) {
             throw new RuntimeException("You are already part of a team for this hackathon");
         }
 
-        // Create join request
         JoinRequest joinRequest = new JoinRequest();
         joinRequest.setTeam(team);
         joinRequest.setRequester(user);
         joinRequest.setRequestedRole(request.getRequestedRole());
-        joinRequest.setUserSkills(request.getUserSkills() != null ? request.getUserSkills() : new ArrayList<String>());
+        joinRequest.setUserSkills(request.getUserSkills() != null ? request.getUserSkills() : new ArrayList<>());
         joinRequest.setMessage(request.getMessage());
         joinRequest.setStatus(Status.PENDING);
-        // Expiry is set in @PrePersist
 
         JoinRequest savedRequest = joinRequestRepository.save(joinRequest);
 
-        // Create notification for team leader
         notificationService.createJoinRequestNotification(savedRequest);
-
-        log.info("Join request created with ID: {} for team: {}", savedRequest.getId(), team.getId());
 
         return new SendJoinRequestResponseDto(
                 true,
@@ -91,17 +76,13 @@ public class JoinRequestServiceImpl implements JoinRequestService {
 
     @Override
     public ProcessJoinRequestResponseDto processJoinRequest(ProcessJoinRequestDto request, Long leaderId) {
-        log.info("Processing join request: {} by leader: {}", request.getJoinRequestId(), leaderId);
-
         JoinRequest joinRequest = joinRequestRepository.findByIdAndNotDeleted(request.getJoinRequestId())
                 .orElseThrow(() -> new RuntimeException("Join request not found"));
 
-        // Verify that the user is the team leader
         if (!joinRequestRepository.canLeaderAccessRequest(request.getJoinRequestId(), leaderId)) {
             throw new RuntimeException("You are not authorized to process this join request");
         }
 
-        // Check if request is still pending and not expired
         if (joinRequest.getStatus() != Status.PENDING) {
             throw new RuntimeException("Join request has already been processed");
         }
@@ -112,43 +93,31 @@ public class JoinRequestServiceImpl implements JoinRequestService {
 
         Team team = joinRequest.getTeam();
         User requester = joinRequest.getRequester();
-
         boolean isAccepted = "ACCEPT".equalsIgnoreCase(request.getAction());
 
         if (isAccepted) {
-            // Check if team still has space
             if (team.isFull()) {
                 throw new RuntimeException("Team is now full");
             }
 
-            // Check if user is still available (not joined another team)
             if (teamRepository.isUserInAnyTeamForHackathon(requester.getId(), team.getHackathon().getId())) {
                 throw new RuntimeException("User has already joined another team for this hackathon");
             }
 
-            // Accept the request
             joinRequest.accept(leaderId, request.getResponseMessage());
 
-            // Add user to team
             team.addMember(requester, joinRequest.getRequestedRole());
             teamRepository.save(team);
 
-            // Send email notification to new member
             sendTeamJoinedEmail(requester, team);
-
-            log.info("Join request accepted: {} for team: {}", joinRequest.getId(), team.getId());
         } else {
-            // Reject the request
             joinRequest.reject(leaderId, request.getResponseMessage());
-            log.info("Join request rejected: {}", joinRequest.getId());
         }
 
         joinRequestRepository.save(joinRequest);
 
-        // Create notification for requester
         notificationService.createJoinRequestResponseNotification(joinRequest, isAccepted);
 
-        // Get requester profile for name
         Profile requesterProfile = profileRepository.findByUserId(requester.getId()).orElse(null);
         String requesterName = requesterProfile != null ? requesterProfile.getFullName() : requester.getEmail();
 
@@ -164,26 +133,19 @@ public class JoinRequestServiceImpl implements JoinRequestService {
 
     @Override
     public CancelJoinRequestResponseDto cancelJoinRequest(CancelJoinRequestDto request, Long userId) {
-        log.info("Cancelling join request: {} by user: {}", request.getJoinRequestId(), userId);
-
         JoinRequest joinRequest = joinRequestRepository.findByIdAndNotDeleted(request.getJoinRequestId())
                 .orElseThrow(() -> new RuntimeException("Join request not found"));
 
-        // Verify that the user owns this join request
         if (!joinRequestRepository.canUserAccessRequest(request.getJoinRequestId(), userId)) {
             throw new RuntimeException("You are not authorized to cancel this join request");
         }
 
-        // Check if request can be cancelled
         if (!joinRequest.canCancel()) {
             throw new RuntimeException("This join request cannot be cancelled");
         }
 
-        // Cancel the request by marking as rejected
         joinRequest.reject(userId, "Cancelled by user");
         joinRequestRepository.save(joinRequest);
-
-        log.info("Join request cancelled: {}", joinRequest.getId());
 
         return new CancelJoinRequestResponseDto(
                 true,
@@ -195,19 +157,16 @@ public class JoinRequestServiceImpl implements JoinRequestService {
     @Override
     @Transactional(readOnly = true)
     public MyJoinRequestsResponseDto getMyJoinRequests(Long userId) {
-        log.info("Fetching join requests for user: {}", userId);
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         List<JoinRequest> allRequests = joinRequestRepository.findByRequesterAndDeletedFalseOrderByCreatedAtDesc(user);
 
-        // Separate active and past requests
         List<MyJoinRequestItemDto> activeRequests = new ArrayList<>();
         List<MyJoinRequestItemDto> pastRequests = new ArrayList<>();
 
         for (JoinRequest request : allRequests) {
-            MyJoinRequestItemDto dto = convertToMyJoinRequestItemDto(request);
+            MyJoinRequestItemDto dto = convertToMyJoinRequestItem(request);
 
             if (request.getStatus() == Status.PENDING && !request.isExpired()) {
                 activeRequests.add(dto);
@@ -230,12 +189,9 @@ public class JoinRequestServiceImpl implements JoinRequestService {
     @Override
     @Transactional(readOnly = true)
     public TeamJoinRequestsResponseDto getTeamJoinRequests(Long teamId, Long leaderId) {
-        log.info("Fetching join requests for team: {} by leader: {}", teamId, leaderId);
-
         Team team = teamRepository.findByIdAndNotDeleted(teamId)
                 .orElseThrow(() -> new RuntimeException("Team not found"));
 
-        // Verify that the user is the team leader
         if (!team.isUserLeader(leaderId)) {
             throw new RuntimeException("You are not authorized to view these join requests");
         }
@@ -245,11 +201,11 @@ public class JoinRequestServiceImpl implements JoinRequestService {
         List<JoinRequest> processedRequests = joinRequestRepository.findProcessedJoinRequestsByTeam(teamId);
 
         List<JoinRequestListItemDto> pendingDtos = pendingRequests.stream()
-                .map(this::convertToListItemDto)
+                .map(this::convertToListItem)
                 .toList();
 
         List<JoinRequestListItemDto> processedDtos = processedRequests.stream()
-                .map(this::convertToListItemDto)
+                .map(this::convertToListItem)
                 .toList();
 
         return new TeamJoinRequestsResponseDto(
@@ -265,29 +221,22 @@ public class JoinRequestServiceImpl implements JoinRequestService {
     @Override
     @Transactional(readOnly = true)
     public JoinRequestStatsDto getJoinRequestStats(Long userId) {
-        log.info("Fetching join request statistics for user: {}", userId);
-
         long totalSent = joinRequestRepository.countTotalRequestsByUser(userId);
         long totalAccepted = joinRequestRepository.countRequestsByUserAndStatus(userId, Status.ACCEPTED);
         long totalRejected = joinRequestRepository.countRequestsByUserAndStatus(userId, Status.REJECTED);
-        long totalExpired = 0; // Would need additional query for expired requests
         long currentPending = joinRequestRepository.countRequestsByUserAndStatus(userId, Status.PENDING);
 
         double acceptanceRate = totalSent > 0 ? (double) totalAccepted / totalSent * 100 : 0.0;
-
-        // Get first and last request dates (mock implementation)
-        LocalDateTime firstRequest = LocalDateTime.now().minusDays(30); // Mock
-        LocalDateTime lastRequest = LocalDateTime.now(); // Mock
 
         return new JoinRequestStatsDto(
                 (int) totalSent,
                 (int) totalAccepted,
                 (int) totalRejected,
-                (int) totalExpired,
+                0,
                 (int) currentPending,
                 acceptanceRate,
-                firstRequest,
-                lastRequest
+                LocalDateTime.now().minusDays(30),
+                LocalDateTime.now()
         );
     }
 
@@ -300,30 +249,22 @@ public class JoinRequestServiceImpl implements JoinRequestService {
     @Override
     @Transactional(readOnly = true)
     public boolean canSendJoinRequest(Long userId, Long teamId) {
-        // Check if user already has an active request for this team
         if (joinRequestRepository.hasActiveRequestForTeam(userId, teamId, LocalDateTime.now())) {
             return false;
         }
 
-        // Check if user is already a member of this team
         Team team = teamRepository.findByIdAndNotDeleted(teamId).orElse(null);
-        if (team != null && team.isUserMember(userId)) {
-            return false;
-        }
-
-        return true;
+        return team == null || !team.isUserMember(userId);
     }
 
     @Override
     public void expireOldRequests() {
-        log.info("Expiring old join requests");
-
         int expiredCount = joinRequestRepository.markExpiredRequestsAsRejected(LocalDateTime.now());
-        log.info("Expired {} join requests", expiredCount);
     }
 
-    // Helper methods
-    private MyJoinRequestItemDto convertToMyJoinRequestItemDto(JoinRequest request) {
+    // === Helper Methods ===
+
+    private MyJoinRequestItemDto convertToMyJoinRequestItem(JoinRequest request) {
         Team team = request.getTeam();
 
         return new MyJoinRequestItemDto(
@@ -344,7 +285,7 @@ public class JoinRequestServiceImpl implements JoinRequestService {
         );
     }
 
-    private JoinRequestListItemDto convertToListItemDto(JoinRequest request) {
+    private JoinRequestListItemDto convertToListItem(JoinRequest request) {
         User requester = request.getRequester();
         Profile requesterProfile = profileRepository.findByUserId(requester.getId()).orElse(null);
 
@@ -380,38 +321,32 @@ public class JoinRequestServiceImpl implements JoinRequestService {
             String userName = userProfile != null ? userProfile.getFullName() : user.getEmail();
 
             String subject = String.format("Welcome to Team %s!", team.getTeamName());
-            String message = buildTeamJoinedEmailMessage(userName, team);
+            String message = String.format(
+                    "Hello %s,\n\n" +
+                            "Congratulations! You have successfully joined team '%s' for the hackathon '%s'.\n\n" +
+                            "Team Details:\n" +
+                            "- Team Name: %s\n" +
+                            "- Team Leader: %s\n" +
+                            "- Hackathon: %s\n" +
+                            "- Deadline: %s\n" +
+                            "- Team Size: %d/%d\n\n" +
+                            "You can now access team contact information and coordinate with your teammates.\n\n" +
+                            "Best of luck with your hackathon!\n\n" +
+                            "The HackMate Team",
+                    userName,
+                    team.getTeamName(),
+                    team.getHackathon().getTitle(),
+                    team.getTeamName(),
+                    team.getLeader().getEmail(),
+                    team.getHackathon().getTitle(),
+                    team.getHackathon().getDeadline().toString(),
+                    team.getCurrentSize(),
+                    team.getMaxSize()
+            );
 
             emailService.sendNotificationEmail(user.getEmail(), subject, message);
-
-            log.info("Team joined email sent to: {}", user.getEmail());
         } catch (Exception e) {
-            log.error("Failed to send team joined email to: {}", user.getEmail(), e);
+            // Email failed but don't throw exception
         }
-    }
-
-    private String buildTeamJoinedEmailMessage(String userName, Team team) {
-        return String.format(
-                "Hello %s,\n\n" +
-                        "Congratulations! You have successfully joined team '%s' for the hackathon '%s'.\n\n" +
-                        "Team Details:\n" +
-                        "- Team Name: %s\n" +
-                        "- Team Leader: %s\n" +
-                        "- Hackathon: %s\n" +
-                        "- Deadline: %s\n" +
-                        "- Team Size: %d/%d\n\n" +
-                        "You can now access team contact information and coordinate with your teammates.\n\n" +
-                        "Best of luck with your hackathon!\n\n" +
-                        "The HackMate Team",
-                userName,
-                team.getTeamName(),
-                team.getHackathon().getTitle(),
-                team.getTeamName(),
-                team.getLeader().getEmail(), // You might want to get leader's full name from profile
-                team.getHackathon().getTitle(),
-                team.getHackathon().getDeadline().toString(),
-                team.getCurrentSize(),
-                team.getMaxSize()
-        );
     }
 }

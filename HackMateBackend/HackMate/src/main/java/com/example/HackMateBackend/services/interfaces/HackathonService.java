@@ -39,7 +39,6 @@ public interface HackathonService {
     // AI endpoints
     AIExtractionResponseDto extractHackathonData(AIExtractionRequestDto request);
 
-    // Utility methods
     Optional<Hackathon> findById(Long id);
     void incrementViewCount(Long hackathonId);
     boolean isUserRegistered(Long hackathonId, Long userId);

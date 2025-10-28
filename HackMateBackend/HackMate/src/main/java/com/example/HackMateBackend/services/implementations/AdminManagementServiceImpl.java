@@ -54,7 +54,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     public UserRoleInfoDto getUserRoleInfo(Long userId) {
         Optional<User> user = userRepository.findById(userId);
         if (user.isPresent()) {
-            return mapToUSerRoleInfoDto(user.get());
+            return mapToUserRoleInfoDto(user.get());
         }else{
             throw new RuntimeException("User not found with the id " + userId);
         }
@@ -66,7 +66,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     public UserRoleInfoDto getUserRoleInfoByEmail(String email) {
         Optional<User> user = userRepository.findByEmailIgnoreCase(email);
         if (user.isPresent()) {
-            return mapToUSerRoleInfoDto(user.get());
+            return mapToUserRoleInfoDto(user.get());
         }else{
             throw new RuntimeException("User not found with the email:" + email);
         }
@@ -86,7 +86,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     }
 
 
-    public UserRoleInfoDto mapToUSerRoleInfoDto(User user){
+    public UserRoleInfoDto mapToUserRoleInfoDto(User user){
         return new UserRoleInfoDto(
                 user.getEmail(),
                 user.getRole(),
@@ -99,7 +99,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
 
     public ListOfUsersDto mapToListOfUsersDto(List<User> users){
         List<UserRoleInfoDto> userRoleInfoDtos = users.stream()
-                .map(this::mapToUSerRoleInfoDto)
+                .map(this::mapToUserRoleInfoDto)
                 .toList();
         return new ListOfUsersDto(userRoleInfoDtos);
     }

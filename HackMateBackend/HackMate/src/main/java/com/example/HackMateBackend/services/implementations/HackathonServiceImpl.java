@@ -3,14 +3,12 @@ package com.example.HackMateBackend.services.implementations;
 import com.example.HackMateBackend.data.entities.*;
 import com.example.HackMateBackend.data.enums.RegistrationStatus;
 import com.example.HackMateBackend.data.enums.Status;
-import com.example.HackMateBackend.dtos.hackathon.*;
-
-import com.example.HackMateBackend.dtos.hackathon.StarToggleRequestDto;
-import com.example.HackMateBackend.dtos.hackathon.StarToggleResponseDto;
+import com.example.HackMateBackend.dtos.hackathon.HackathonDetailsResponseDto;
+import com.example.HackMateBackend.dtos.hackathon.HackathonListItemDto;
+import com.example.HackMateBackend.dtos.hackathon.HackathonListResponseDto;
 import com.example.HackMateBackend.repositories.*;
 import com.example.HackMateBackend.services.interfaces.HackathonService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,17 +16,15 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
+import com.example.HackMateBackend.dtos.hackathon.*;
 @Service
 @RequiredArgsConstructor
-@Slf4j
 @Transactional
 public class HackathonServiceImpl implements HackathonService {
 
@@ -41,25 +37,21 @@ public class HackathonServiceImpl implements HackathonService {
     @Override
     @Transactional(readOnly = true)
     public HackathonListResponseDto getPublicHackathonFeed(HackathonFilterRequestDto filterRequest) {
-        log.info("Fetching public hackathon feed with filters: {}", filterRequest);
-
-        Sort sort = createSortFromRequest(filterRequest.getSortBy(), filterRequest.getSortDirection());
+        Sort sort = createSort(filterRequest.getSortBy(), filterRequest.getSortDirection());
         Pageable pageable = PageRequest.of(filterRequest.getPage(), filterRequest.getSize(), sort);
 
         Page<Hackathon> hackathonPage;
 
-        if (!filterRequest.isShowExpired()) {
+        if (filterRequest.getSearch() != null && !filterRequest.getSearch().trim().isEmpty()) {
+            hackathonPage = hackathonRepository.searchHackathons(filterRequest.getSearch().trim(), pageable);
+        } else if (!filterRequest.isShowExpired()) {
             hackathonPage = hackathonRepository.findActiveHackathons(LocalDateTime.now(), pageable);
         } else {
             hackathonPage = hackathonRepository.findApprovedHackathons(pageable);
         }
 
-        if (filterRequest.getSearch() != null && !filterRequest.getSearch().trim().isEmpty()) {
-            hackathonPage = hackathonRepository.searchHackathons(filterRequest.getSearch().trim(), pageable);
-        }
-
         List<HackathonListItemDto> hackathonDtos = hackathonPage.getContent().stream()
-                .map(this::convertToListItemDto)
+                .map(this::convertToListItem)
                 .toList();
 
         return new HackathonListResponseDto(
@@ -75,8 +67,6 @@ public class HackathonServiceImpl implements HackathonService {
     @Override
     @Transactional(readOnly = true)
     public HackathonDetailsResponseDto getHackathonDetails(Long hackathonId, Long userId) {
-        log.info("Fetching hackathon details for ID: {} by user: {}", hackathonId, userId);
-
         Hackathon hackathon = hackathonRepository.findApprovedById(hackathonId)
                 .orElseThrow(() -> new RuntimeException("Hackathon not found or not approved"));
 
@@ -96,13 +86,11 @@ public class HackathonServiceImpl implements HackathonService {
             }
         }
 
-        return convertToDetailsDto(hackathon, isRegistered, isStarred);
+        return convertToDetails(hackathon, isRegistered, isStarred);
     }
 
     @Override
     public CreateHackathonResponseDto createHackathon(CreateHackathonRequestDto request, Long userId) {
-        log.info("Creating hackathon by user: {}", userId);
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -127,8 +115,6 @@ public class HackathonServiceImpl implements HackathonService {
 
         Hackathon savedHackathon = hackathonRepository.save(hackathon);
 
-        log.info("Hackathon created with ID: {} by user: {}", savedHackathon.getId(), userId);
-
         return new CreateHackathonResponseDto(
                 true,
                 "Hackathon submitted successfully. It will be reviewed by admins.",
@@ -140,8 +126,6 @@ public class HackathonServiceImpl implements HackathonService {
 
     @Override
     public RegistrationToggleResponseDto toggleRegistration(RegistrationToggleRequestDto request, Long userId) {
-        log.info("Toggling registration for hackathon: {} by user: {}", request.getHackathonId(), userId);
-
         Hackathon hackathon = hackathonRepository.findApprovedById(request.getHackathonId())
                 .orElseThrow(() -> new RuntimeException("Hackathon not found"));
 
@@ -166,10 +150,7 @@ public class HackathonServiceImpl implements HackathonService {
             }
 
             return new RegistrationToggleResponseDto(
-                    true,
-                    "Successfully registered for hackathon",
-                    true,
-                    LocalDateTime.now()
+                    true, "Successfully registered for hackathon", true, LocalDateTime.now()
             );
         } else {
             if (existingRegistration.isPresent() &&
@@ -179,18 +160,13 @@ public class HackathonServiceImpl implements HackathonService {
             }
 
             return new RegistrationToggleResponseDto(
-                    true,
-                    "Successfully unregistered from hackathon",
-                    false,
-                    LocalDateTime.now()
+                    true, "Successfully unregistered from hackathon", false, LocalDateTime.now()
             );
         }
     }
 
     @Override
     public StarToggleResponseDto toggleStar(StarToggleRequestDto request, Long userId) {
-        log.info("Toggling star for hackathon: {} by user: {}", request.getHackathonId(), userId);
-
         Hackathon hackathon = hackathonRepository.findApprovedById(request.getHackathonId())
                 .orElseThrow(() -> new RuntimeException("Hackathon not found"));
 
@@ -201,7 +177,6 @@ public class HackathonServiceImpl implements HackathonService {
                 registrationRepository.findByHackathonAndUserAndDeletedFalse(hackathon, user);
 
         if (request.isStar()) {
-            // Star hackathon
             if (existingRegistration.isPresent()) {
                 HackathonRegistration registration = existingRegistration.get();
                 if (registration.getStatus() != RegistrationStatus.STARRED) {
@@ -214,23 +189,16 @@ public class HackathonServiceImpl implements HackathonService {
             }
 
             return new StarToggleResponseDto(
-                    true,
-                    "Hackathon starred successfully",
-                    true,
-                    LocalDateTime.now()
+                    true, "Hackathon starred successfully", true, LocalDateTime.now()
             );
         } else {
-            // Unstar hackathon
             if (existingRegistration.isPresent() &&
                     existingRegistration.get().getStatus() == RegistrationStatus.STARRED) {
                 registrationRepository.delete(existingRegistration.get());
             }
 
             return new StarToggleResponseDto(
-                    true,
-                    "Hackathon unstarred successfully",
-                    false,
-                    LocalDateTime.now()
+                    true, "Hackathon unstarred successfully", false, LocalDateTime.now()
             );
         }
     }
@@ -238,67 +206,53 @@ public class HackathonServiceImpl implements HackathonService {
     @Override
     @Transactional(readOnly = true)
     public HackathonListResponseDto getUserRegisteredHackathons(Long userId, Pageable pageable) {
-        log.info("Fetching registered hackathons for user: {}", userId);
-
-        User user = userRepository.findById(userId)
+        userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         List<Hackathon> registeredHackathons = hackathonRepository.findRegisteredHackathonsByUser(userId);
 
         List<HackathonListItemDto> hackathonDtos = registeredHackathons.stream()
-                .map(hackathon -> convertToListItemDto(hackathon, true, false))
+                .map(hackathon -> convertToListItem(hackathon, true, false))
                 .toList();
 
         return new HackathonListResponseDto(
-                hackathonDtos,
-                0, 1, hackathonDtos.size(),
-                false, false
+                hackathonDtos, 0, 1, hackathonDtos.size(), false, false
         );
     }
 
     @Override
     @Transactional(readOnly = true)
     public HackathonListResponseDto getUserStarredHackathons(Long userId, Pageable pageable) {
-        log.info("Fetching starred hackathons for user: {}", userId);
-
-        User user = userRepository.findById(userId)
+        userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         List<Hackathon> starredHackathons = hackathonRepository.findStarredHackathonsByUser(userId);
 
         List<HackathonListItemDto> hackathonDtos = starredHackathons.stream()
-                .map(hackathon -> convertToListItemDto(hackathon, false, true))
+                .map(hackathon -> convertToListItem(hackathon, false, true))
                 .toList();
 
         return new HackathonListResponseDto(
-                hackathonDtos,
-                0, 1, hackathonDtos.size(),
-                false, false
+                hackathonDtos, 0, 1, hackathonDtos.size(), false, false
         );
     }
 
     @Override
     @Transactional(readOnly = true)
     public HackathonListResponseDto getPendingHackathons() {
-        log.info("Fetching pending hackathons for admin review");
-
         List<Hackathon> pendingHackathons = hackathonRepository.findPendingHackathons();
 
         List<HackathonListItemDto> hackathonDtos = pendingHackathons.stream()
-                .map(this::convertToListItemDto)
+                .map(this::convertToListItem)
                 .toList();
 
         return new HackathonListResponseDto(
-                hackathonDtos,
-                0, 1, hackathonDtos.size(),
-                false, false
+                hackathonDtos, 0, 1, hackathonDtos.size(), false, false
         );
     }
 
     @Override
     public CreateHackathonResponseDto approveHackathon(Long hackathonId, Long adminId) {
-        log.info("Approving hackathon: {} by admin: {}", hackathonId, adminId);
-
         Hackathon hackathon = hackathonRepository.findById(hackathonId)
                 .orElseThrow(() -> new RuntimeException("Hackathon not found"));
 
@@ -308,8 +262,6 @@ public class HackathonServiceImpl implements HackathonService {
 
         hackathon.approve(adminId);
         hackathonRepository.save(hackathon);
-
-        log.info("Hackathon approved: {}", hackathonId);
 
         return new CreateHackathonResponseDto(
                 true,
@@ -322,8 +274,6 @@ public class HackathonServiceImpl implements HackathonService {
 
     @Override
     public CreateHackathonResponseDto rejectHackathon(Long hackathonId, Long adminId) {
-        log.info("Rejecting hackathon: {} by admin: {}", hackathonId, adminId);
-
         Hackathon hackathon = hackathonRepository.findById(hackathonId)
                 .orElseThrow(() -> new RuntimeException("Hackathon not found"));
 
@@ -333,8 +283,6 @@ public class HackathonServiceImpl implements HackathonService {
 
         hackathon.reject();
         hackathonRepository.save(hackathon);
-
-        log.info("Hackathon rejected: {}", hackathonId);
 
         return new CreateHackathonResponseDto(
                 true,
@@ -347,10 +295,7 @@ public class HackathonServiceImpl implements HackathonService {
 
     @Override
     public AIExtractionResponseDto extractHackathonData(AIExtractionRequestDto request) {
-        log.info("Extracting hackathon data from message text");
-
         try {
-            // Simple AI extraction using regex patterns
             String text = request.getMessageText();
 
             String title = extractTitle(text);
@@ -369,7 +314,6 @@ public class HackathonServiceImpl implements HackathonService {
                     tags, organizer, location, prizePool, confidence, null
             );
         } catch (Exception e) {
-            log.error("Error extracting hackathon data", e);
             return new AIExtractionResponseDto(
                     false, null, null, null, null,
                     null, null, null, null, 0.0, e.getMessage()
@@ -402,8 +346,9 @@ public class HackathonServiceImpl implements HackathonService {
                 hackathonId, userId, RegistrationStatus.STARRED);
     }
 
-    // Helper methods
-    private Sort createSortFromRequest(String sortBy, String sortDirection) {
+    // === Helper Methods ===
+
+    private Sort createSort(String sortBy, String sortDirection) {
         Sort.Direction direction = "desc".equalsIgnoreCase(sortDirection) ?
                 Sort.Direction.DESC : Sort.Direction.ASC;
 
@@ -416,11 +361,11 @@ public class HackathonServiceImpl implements HackathonService {
         };
     }
 
-    private HackathonListItemDto convertToListItemDto(Hackathon hackathon) {
-        return convertToListItemDto(hackathon, false, false);
+    private HackathonListItemDto convertToListItem(Hackathon hackathon) {
+        return convertToListItem(hackathon, false, false);
     }
 
-    private HackathonListItemDto convertToListItemDto(Hackathon hackathon, boolean isRegistered, boolean isStarred) {
+    private HackathonListItemDto convertToListItem(Hackathon hackathon, boolean isRegistered, boolean isStarred) {
         return new HackathonListItemDto(
                 hackathon.getId(),
                 hackathon.getTitle(),
@@ -441,7 +386,7 @@ public class HackathonServiceImpl implements HackathonService {
         );
     }
 
-    private HackathonDetailsResponseDto convertToDetailsDto(Hackathon hackathon, boolean isRegistered, boolean isStarred) {
+    private HackathonDetailsResponseDto convertToDetails(Hackathon hackathon, boolean isRegistered, boolean isStarred) {
         return new HackathonDetailsResponseDto(
                 hackathon.getId(),
                 hackathon.getTitle(),
@@ -472,51 +417,26 @@ public class HackathonServiceImpl implements HackathonService {
         );
     }
 
-    // AI Extraction Helper Methods
     private String extractTitle(String text) {
-        // Look for patterns like "Hackathon: Title" or lines that look like titles
-        Pattern titlePattern = Pattern.compile("(?i)(?:hackathon[:\\s]*)?([A-Z][\\w\\s]{5,50})",
-                Pattern.MULTILINE);
+        Pattern titlePattern = Pattern.compile("(?i)(?:hackathon[:\\s]*)?([A-Z][\\w\\s]{5,50})", Pattern.MULTILINE);
         Matcher matcher = titlePattern.matcher(text);
-        if (matcher.find()) {
-            return matcher.group(1).trim();
-        }
-        return null;
+        return matcher.find() ? matcher.group(1).trim() : null;
     }
 
     private String extractDescription(String text) {
-        // Return the first 200 characters as description
-        if (text.length() > 200) {
-            return text.substring(0, 200) + "...";
-        }
-        return text;
+        return text.length() > 200 ? text.substring(0, 200) + "..." : text;
     }
 
     private String extractRegistrationLink(String text) {
-        // Look for URLs
         Pattern urlPattern = Pattern.compile("https?://[\\w\\-_]+(\\.[\\w\\-_]+)+([\\w\\-\\.,@?^=%&:/~\\+#]*[\\w\\-\\@?^=%&/~\\+#])?");
         Matcher matcher = urlPattern.matcher(text);
-        if (matcher.find()) {
-            return matcher.group();
-        }
-        return null;
+        return matcher.find() ? matcher.group() : null;
     }
 
     private LocalDateTime extractDeadline(String text) {
-        // Look for date patterns
         Pattern datePattern = Pattern.compile("(?i)(?:deadline|due|submit|end)[:\\s]*([\\d]{1,2}[/-][\\d]{1,2}[/-][\\d]{2,4})");
         Matcher matcher = datePattern.matcher(text);
-        if (matcher.find()) {
-            try {
-                // Simple date parsing - in production, use proper date parsing library
-                String dateStr = matcher.group(1);
-                // Return a placeholder deadline (7 days from now)
-                return LocalDateTime.now().plusDays(7);
-            } catch (Exception e) {
-                log.warn("Could not parse date: {}", matcher.group(1));
-            }
-        }
-        return LocalDateTime.now().plusDays(30); // Default to 30 days
+        return matcher.find() ? LocalDateTime.now().plusDays(7) : LocalDateTime.now().plusDays(30);
     }
 
     private List<String> extractTags(String text) {
@@ -534,34 +454,23 @@ public class HackathonServiceImpl implements HackathonService {
     }
 
     private String extractOrganizer(String text) {
-        // Look for patterns like "organized by", "by", etc.
         Pattern organizerPattern = Pattern.compile("(?i)(?:organized by|by|host[ed]* by)[:\\s]*([A-Za-z\\s]{3,50})");
         Matcher matcher = organizerPattern.matcher(text);
-        if (matcher.find()) {
-            return matcher.group(1).trim();
-        }
-        return null;
+        return matcher.find() ? matcher.group(1).trim() : null;
     }
 
     private String extractLocation(String text) {
         Pattern locationPattern = Pattern.compile("(?i)(?:location|venue|at)[:\\s]*([A-Za-z\\s,]{3,50})");
         Matcher matcher = locationPattern.matcher(text);
-        if (matcher.find()) {
-            return matcher.group(1).trim();
-        }
-        if (text.toLowerCase().contains("online") || text.toLowerCase().contains("virtual")) {
-            return "Online";
-        }
+        if (matcher.find()) return matcher.group(1).trim();
+        if (text.toLowerCase().contains("online") || text.toLowerCase().contains("virtual")) return "Online";
         return null;
     }
 
     private String extractPrizePool(String text) {
         Pattern prizePattern = Pattern.compile("(?i)(?:prize|reward|cash)[:\\s]*([\\$₹€£]?[\\d,]+[\\$₹€£]?)");
         Matcher matcher = prizePattern.matcher(text);
-        if (matcher.find()) {
-            return matcher.group(1).trim();
-        }
-        return null;
+        return matcher.find() ? matcher.group(1).trim() : null;
     }
 
     private double calculateConfidence(String title, String description, String registrationLink, LocalDateTime deadline) {
@@ -570,7 +479,6 @@ public class HackathonServiceImpl implements HackathonService {
         if (description != null && !description.isEmpty()) score += 25;
         if (registrationLink != null && !registrationLink.isEmpty()) score += 30;
         if (deadline != null) score += 20;
-
         return score / 100.0;
     }
 }
