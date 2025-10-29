@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,9 +26,9 @@ class UserSessionManager @Inject constructor(
         private val PROFILE_SETUP_KEY = booleanPreferencesKey("profile_setup")
     }
 
-    suspend fun saveToken(token : String){
+    suspend fun saveToken(token: String?){
         context.dataStore.edit{prefs ->
-            prefs[TOKEN_KEY] = token
+            prefs[TOKEN_KEY] = token.toString()
         }
     }
 
@@ -36,9 +37,9 @@ class UserSessionManager @Inject constructor(
             prefs[TOKEN_KEY]
         }
 
-    suspend fun saveEmail(email: String) {
+    suspend fun saveEmail(email: String?) {
         context.dataStore.edit { prefs ->
-            prefs[EMAIL_KEY] = email
+            prefs[EMAIL_KEY] = email.toString()
         }
     }
 
@@ -73,5 +74,12 @@ class UserSessionManager @Inject constructor(
         context.dataStore.edit { prefs ->
             prefs.clear()
         }
+    }
+
+    suspend fun getEmail() : String? {
+        val prefs = context.dataStore.data
+            .map { it[EMAIL_KEY] }
+            .first()
+        return prefs
     }
 }

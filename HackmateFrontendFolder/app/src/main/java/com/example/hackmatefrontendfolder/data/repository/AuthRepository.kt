@@ -1,72 +1,48 @@
 @file:Suppress("unused")
 
 package com.example.hackmatefrontendfolder.data.repository
-
-import com.example.hackmatefrontendfolder.data.api.ApiService
-import com.example.hackmatefrontendfolder.data.model.user.ChangePasswordRequest
-import com.example.hackmatefrontendfolder.data.model.user.ChangePasswordResponse
-import com.example.hackmatefrontendfolder.data.model.user.EmailVerificationRequest
-import com.example.hackmatefrontendfolder.data.model.user.EmailVerificationResponse
-import com.example.hackmatefrontendfolder.data.model.user.ForgotPasswordRequest
-import com.example.hackmatefrontendfolder.data.model.user.ForgotPasswordResponse
-import com.example.hackmatefrontendfolder.data.model.user.LoginRequest
-import com.example.hackmatefrontendfolder.data.model.user.LoginResponse
-import com.example.hackmatefrontendfolder.data.model.user.ResetPasswordRequest
-import com.example.hackmatefrontendfolder.data.model.user.ResetPasswordResponse
-import com.example.hackmatefrontendfolder.data.model.user.SignupRequest
-import com.example.hackmatefrontendfolder.data.model.user.SignupResponse
-import com.example.hackmatefrontendfolder.data.model.user.TokenValidationResponse
-import com.example.hackmatefrontendfolder.data.model.user.ProfileSetupStatusResponse
-import com.example.hackmatefrontendfolder.data.model.user.EmailExistenceResponse
-import com.example.hackmatefrontendfolder.data.model.user.EmailVerificationStatusResponse
+import com.example.hackmatefrontendfolder.data.local.UserSessionManager
+import com.example.hackmatefrontendfolder.data.remote.ApiService
+import com.example.hackmatefrontendfolder.domain.model.user.*;
 import retrofit2.Response
 import javax.inject.Inject
 
+
 class AuthRepository @Inject constructor(
-    val apiService: ApiService
+    val apiService: ApiService,
+    private val userSessionManager: UserSessionManager
+
 ) {
 
     suspend fun signup(
-        email : String,
-        password :String,
-        confirmPassword : String,
+        request : SignupRequest
     ) : Response<SignupResponse> {
-        val request = SignupRequest(
-            email = email,
-            password = password,
-            confirmPassword = confirmPassword
-        )
-        return apiService.signup(request)
+        val response = apiService.signup(request)
+        if(response.isSuccessful){
+            userSessionManager.saveEmail(request.email)
+        }
+        return response
     }
 
     suspend fun login(
-        email : String,
-        password :String
+        request : LoginRequest
     ) : Response<LoginResponse> {
-        val request = LoginRequest(
-            email = email,
-            password = password,
-        )
         return apiService.login(request)
     }
 
-    suspend fun changePassword(currentPassword: String, newPassword: String, confirmNewPassword: String): Response<ChangePasswordResponse> {
-        val request = ChangePasswordRequest(currentPassword = currentPassword, newPassword = newPassword, confirmNewPassword = confirmNewPassword)
+    suspend fun changePassword(request: ChangePasswordRequest): Response<ChangePasswordResponse> {
         return apiService.changePassword(request)
     }
 
-    suspend fun forgotPassword(email: String): Response<ForgotPasswordResponse> {
-        val request = ForgotPasswordRequest(email = email)
+    suspend fun forgotPassword(request: ForgotPasswordRequest): Response<ForgotPasswordResponse> {
         return apiService.forgotPassword(request)
     }
 
-    suspend fun resetPassword(token: String, newPassword: String, confirmPassword: String): Response<ResetPasswordResponse> {
-        val request = ResetPasswordRequest(resetToken = token, newPassword = newPassword, confirmPassword = confirmPassword)
+    suspend fun resetPassword(request: ResetPasswordRequest): Response<ResetPasswordResponse> {
         return apiService.resetPassword(request)
     }
 
-    suspend fun emailVerification(token: String): Response<EmailVerificationResponse> {
-        val request = EmailVerificationRequest(verificationToken = token)
+    suspend fun emailVerification(request: EmailVerificationRequest): Response<EmailVerificationResponse> {
         return apiService.verifyEmail(request)
     }
 
@@ -96,6 +72,6 @@ class AuthRepository @Inject constructor(
 
     suspend fun isEmailVerified(email: String): Boolean {
         val response = apiService.isEmailVerified(email)
-        return response.isSuccessful && response.body()?.verified == true
+        return (if (response.isSuccessful) response.body() ?: false else false) as Boolean
     }
 }

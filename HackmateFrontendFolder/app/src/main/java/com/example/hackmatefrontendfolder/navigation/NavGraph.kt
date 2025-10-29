@@ -4,14 +4,17 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.hackmatefrontendfolder.ui.presentation.auth.AuthScreen
-import com.example.hackmatefrontendfolder.ui.presentation.auth.EmailVerificationScreen
-import com.example.hackmatefrontendfolder.ui.presentation.auth.ForgotPasswordScreen
-import com.example.hackmatefrontendfolder.ui.presentation.auth.ResetPasswordScreen
-import com.example.hackmatefrontendfolder.ui.presentation.home.HomeScreen
-import com.example.hackmatefrontendfolder.ui.presentation.profile.ProfileSetupScreen
-import com.example.hackmatefrontendfolder.ui.presentation.profile.ProfileScreen
-import com.example.hackmatefrontendfolder.ui.presentation.splash.SplashScreen
+import com.example.hackmatefrontendfolder.ui.presentation.screens.auth.AuthScreen
+import com.example.hackmatefrontendfolder.ui.presentation.screens.auth.EmailVerificationScreen
+import com.example.hackmatefrontendfolder.ui.presentation.screens.auth.ForgotPasswordScreen
+import com.example.hackmatefrontendfolder.ui.presentation.screens.auth.ResetPasswordScreen
+import com.example.hackmatefrontendfolder.ui.presentation.screens.hackathondetails.HackathonDetailsScreen
+import com.example.hackmatefrontendfolder.ui.presentation.screens.home.HomeScreen
+import com.example.hackmatefrontendfolder.ui.presentation.screens.profile.ProfileSetupScreen
+import com.example.hackmatefrontendfolder.ui.presentation.screens.profile.ProfileScreen
+import com.example.hackmatefrontendfolder.ui.presentation.screens.teams.TeamsScreen
+import com.example.hackmatefrontendfolder.ui.presentation.screens.registered.RegisteredScreen
+import com.example.hackmatefrontendfolder.ui.presentation.screens.splash.SplashScreen
 
 @Composable
 fun NavGraph(navController: NavHostController) {
@@ -19,7 +22,6 @@ fun NavGraph(navController: NavHostController) {
         navController = navController,
         startDestination = AppScreens.Splash
     ) {
-        // Splash Screen - Entry point for all users
         composable(AppScreens.Splash) {
             SplashScreen(
                 onNavigate = { destination ->
@@ -33,7 +35,6 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
-        // Auth Screen - Login/Signup
         composable(AppScreens.Auth) {
             AuthScreen(
                 onNavigateToEmailVerification = {
@@ -59,8 +60,7 @@ fun NavGraph(navController: NavHostController) {
                 },
                 onNavigateToForgotPassword = {
                     navController.navigate(AppScreens.ForgotPassword)
-                },
-
+                }
             )
         }
 
@@ -100,7 +100,61 @@ fun NavGraph(navController: NavHostController) {
         // Home Screen
         composable(AppScreens.Home) {
             HomeScreen(
+                onHackathonClick = { hackathonId ->
+                    navController.navigate("${AppScreens.HackathonDetails}/$hackathonId")
+                },
                 onProfileClick = {
+                    navController.navigate(AppScreens.Profile)
+                },
+                onTeamsClick = {
+                    navController.navigate(AppScreens.Teams)
+                },
+                onRegisteredClick = {
+                    navController.navigate(AppScreens.Registered)
+                }
+            )
+        }
+
+        // Hackathon Details Screen
+        composable("${AppScreens.HackathonDetails}/{hackathonId}") { backStackEntry ->
+            val hackathonId = backStackEntry.arguments?.getString("hackathonId")?.toLongOrNull() ?: 0L
+            HackathonDetailsScreen(
+                hackathonId = hackathonId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // Teams Screen
+        composable(AppScreens.Teams) {
+            TeamsScreen(
+                onNavigateToHome = {
+                    navController.navigate(AppScreens.Home) {
+                        popUpTo(AppScreens.Home) { inclusive = true }
+                    }
+                },
+                onNavigateToProfile = {
+                    navController.navigate(AppScreens.Profile)
+                },
+                onNavigateToRegistered = {
+                    navController.navigate(AppScreens.Registered)
+                }
+            )
+        }
+
+        // Registered Screen
+        composable(AppScreens.Registered) {
+            RegisteredScreen(
+                onNavigateToHome = {
+                    navController.navigate(AppScreens.Home) {
+                        popUpTo(AppScreens.Home) { inclusive = true }
+                    }
+                },
+                onNavigateToTeams = {
+                    navController.navigate(AppScreens.Teams)
+                },
+                onNavigateToProfile = {
                     navController.navigate(AppScreens.Profile)
                 }
             )
@@ -111,14 +165,14 @@ fun NavGraph(navController: NavHostController) {
             ProfileScreen(
                 onNavigateToHome = {
                     navController.navigate(AppScreens.Home) {
-                        popUpTo(AppScreens.Profile) {
-                            inclusive = true
-                        }
+                        popUpTo(AppScreens.Home) { inclusive = true }
                     }
                 },
                 onNavigateToTeams = {
+                    navController.navigate(AppScreens.Teams)
                 },
                 onNavigateToRegistered = {
+                    navController.navigate(AppScreens.Registered)
                 },
                 onEditProfile = {
                 },

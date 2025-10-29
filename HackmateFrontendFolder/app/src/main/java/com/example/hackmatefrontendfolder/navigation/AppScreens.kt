@@ -3,6 +3,8 @@ package com.example.hackmatefrontendfolder.navigation
 object AppScreens {
     const val Splash = "splash"
     const val Home = "home"
+    const val Teams = "teams"
+    const val Registered = "registered"
     const val HackathonDetails = "hackathon_details"
     const val CreateHackathon = "create_hackathon"
     const val TeamSearch = "team_search"

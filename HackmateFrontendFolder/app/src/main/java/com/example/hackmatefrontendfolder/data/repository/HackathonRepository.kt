@@ -1,15 +1,8 @@
 @file:Suppress("unused")
-package com.example.hackmatefrontendfolder.data.repository
 
-import com.example.hackmatefrontendfolder.data.api.ApiService
-import com.example.hackmatefrontendfolder.data.model.hackathon.CreateHackathonRequest
-import com.example.hackmatefrontendfolder.data.model.hackathon.CreateHackathonResponse
-import com.example.hackmatefrontendfolder.data.model.hackathon.HackathonDetailsResponse
-import com.example.hackmatefrontendfolder.data.model.hackathon.HackathonListResponse
-import com.example.hackmatefrontendfolder.data.model.hackathon.RegistrationToggleRequest
-import com.example.hackmatefrontendfolder.data.model.hackathon.RegistrationToggleResponse
-import com.example.hackmatefrontendfolder.data.model.hackathon.StarToggleRequest
-import com.example.hackmatefrontendfolder.data.model.hackathon.StarToggleResponse
+package com.example.hackmatefrontendfolder.data.repository
+import com.example.hackmatefrontendfolder.data.remote.ApiService
+import com.example.hackmatefrontendfolder.domain.model.hackathon.*
 import retrofit2.Response
 import javax.inject.Inject
 
@@ -20,21 +13,19 @@ class HackathonRepository @Inject constructor(
         return apiService.createHackathon(request)
     }
 
-    suspend fun getPublicHackathons(
-        search: String = "",
-        showExpired: Boolean = false,
-        sortBy: String = "deadline",
-        sortDirection: String = "asc",
-        page: Int = 0,
-        size: Int = 20
-    ): Response<HackathonListResponse> {
+    suspend fun getPublicHackathons(request: HackathonFilterRequest): Response<HackathonListResponse> {
         return apiService.getPublicHackathonFeed(
-            search = search,
-            showExpired = showExpired,
-            sortBy = sortBy,
-            sortDirection = sortDirection,
-            page = page,
-            size = size
+            search = request.search,
+            tags = request.tags,
+            status = request.status,
+            urgencyLevel = request.urgencyLevel,
+            organizer = request.organizer,
+            location = request.location,
+            showExpired = request.showExpired,
+            sortBy = request.sortBy,
+            sortDirection = request.sortDirection,
+            page = request.page,
+            size = request.size
         )
     }
 

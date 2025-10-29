@@ -1,15 +1,8 @@
 @file:Suppress("unused")
-package com.example.hackmatefrontendfolder.data.repository
 
-import com.example.hackmatefrontendfolder.data.api.ApiService
-import com.example.hackmatefrontendfolder.data.model.profile.ProfileSetupRequest
-import com.example.hackmatefrontendfolder.data.model.profile.ProfileSetupResponse
-import com.example.hackmatefrontendfolder.data.model.profile.ProfileUpdateRequest
-import com.example.hackmatefrontendfolder.data.model.profile.ProfileUpdateResponse
-import com.example.hackmatefrontendfolder.data.model.profile.PrivateProfileResponse
-import com.example.hackmatefrontendfolder.data.model.profile.PublicProfileResponse
-import com.example.hackmatefrontendfolder.data.model.profile.AddReviewRequest
-import com.example.hackmatefrontendfolder.data.model.profile.AddReviewResponse
+package com.example.hackmatefrontendfolder.data.repository
+import com.example.hackmatefrontendfolder.data.remote.ApiService
+import com.example.hackmatefrontendfolder.domain.model.profile.*
 import retrofit2.Response
 import javax.inject.Inject
 
@@ -41,4 +34,5 @@ class ProfileRepository @Inject constructor(
         return apiService.profileHealthCheck()
     }
 }
+
 
